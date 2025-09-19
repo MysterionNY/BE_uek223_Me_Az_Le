@@ -1,11 +1,14 @@
 package com.example.demo.domain.blogpost;
 
+import com.example.demo.core.exception.InvalidCategoryException;
 import com.example.demo.core.generic.AbstractServiceImpl;
 import com.example.demo.domain.blogpost.dto.BlogpostDTO;
 import com.example.demo.domain.user.User;
 import com.example.demo.domain.role.Role;
 import com.example.demo.domain.user.UserDetailsImpl;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,17 +32,32 @@ public class BlogpostServiceImpl extends AbstractServiceImpl<Blogpost> implement
         this.blogpostRepository = blogpostRepository;
     }
 
-    public List<Blogpost> findAllBlogposts(){
-        List<Blogpost> post = blogpostRepository.findAll();
-        if (post.isEmpty()){
-            log.warn("No blogposts found in the database");
+    public Page<Blogpost> findAllPaginated(String category, Pageable pageable) {
+        Page<Blogpost> blogpostPage;
+
+        if (category != null && !category.isBlank()) {
+            final BlogpostCategoryEnum catEnum;
+            try {
+                catEnum = BlogpostCategoryEnum.valueOf(category.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new InvalidCategoryException("Diese Kategorie ist nicht verfügbar: " + category);
+            }
+            blogpostPage = blogpostRepository.findByCategory(catEnum, pageable);
         } else {
-            log.info(post.size() + " blogposts retrieved from database.");
+            blogpostPage = blogpostRepository.findAll(pageable);
         }
-        return post;
+
+        if (blogpostPage.isEmpty()) {
+            log.warn("No blogposts found in the database (category={})", category);
+        } else {
+            log.info("{} blogposts retrieved from database (category={})",
+                    blogpostPage.getNumberOfElements(), category);
+        }
+        return blogpostPage;
     }
 
-    public Blogpost findBlogpostById(UUID id){
+
+    public Blogpost findById(UUID id){
         return blogpostRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("Blogpost with ID {} not found.", id);

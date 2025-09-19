@@ -4,7 +4,12 @@ import com.example.demo.domain.blogpost.dto.BlogpostDTO;
 import com.example.demo.domain.blogpost.dto.BlogpostMapper;
 import com.example.demo.domain.user.User;
 import com.example.demo.domain.user.UserService;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,18 +32,20 @@ public class BlogpostController {
         this.blogpostMapper = blogpostMapper;
     }
 
-    @Operation(summary = "Get all blogposts", description = "Returns a list of all blogposts in the database with author and creation date.")
+    @Operation(summary = "Get all blogposts with Pagination", description = "Returns a list of all blogposts in the database with author and creation date." +
+            " Pagination can be used to filter by the amount of entries that are shown and also which category. Available categories are: ADVICE, HEALTH, SPORT, FOOD, HISTORY")
     @GetMapping
-    @PreAuthorize("hasAuthority('BLOGPOST_READ')")
-    public ResponseEntity<List<BlogpostDTO>> findAll() {
-        List<Blogpost> blogposts = blogpostService.findAll();
+    public ResponseEntity<List<BlogpostDTO>> findAllPaginated(
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Blogpost> blogposts = blogpostService.findAllPaginated(category, PageRequest.of(page, size));
         List<BlogpostDTO> blogpostDTOS = blogposts.stream().map(blogpostMapper::toDTO).toList();
         return new ResponseEntity<>(blogpostDTOS, HttpStatus.OK);
     }
 
     @Operation(summary = "Gets blogpost by ID", description = "Retrieves the blogpost via ID from database with author and creation date.")
     @GetMapping("/{blogpostId}")
-    @PreAuthorize("hasAuthority('BLOGPOST_READ')")
     public ResponseEntity<BlogpostDTO> findById(@PathVariable UUID blogpostId) {
         Blogpost blogpost = blogpostService.findById(blogpostId);
         return new ResponseEntity<>(blogpostMapper.toDTO(blogpost), HttpStatus.OK);
@@ -46,7 +53,6 @@ public class BlogpostController {
 
     @Operation(summary = "Get all blogposts of specific author", description = "Retrieves a list of all blogposts, via authorID, from the database from a specific author.")
     @GetMapping("/author/{authorId}")
-    @PreAuthorize("hasAuthority('BLOGPOST_READ')")
     public ResponseEntity<List<BlogpostDTO>> findByAuthor(@PathVariable UUID authorId) {
         User blogpostAuthor = userService.findById(authorId);
         List<Blogpost> authorBlogposts = blogpostService.findBlogpostsByAuthor(blogpostAuthor);

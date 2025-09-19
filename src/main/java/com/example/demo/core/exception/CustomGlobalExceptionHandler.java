@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -85,6 +86,24 @@ public class CustomGlobalExceptionHandler {
                               .build();
   }
 
+  @ExceptionHandler(InvalidCategoryException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ResponseError handleInvalidCategory(InvalidCategoryException ex) {
+    return new ResponseError()
+            .setTimeStamp(LocalDate.now())
+            .setErrors(Map.of("category", ex.getMessage()))
+            .build();
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  public ResponseError handleAccessDenied(AccessDeniedException ex) {
+    return new ResponseError()
+            .setTimeStamp(LocalDate.now())
+            .setErrors(Map.of("authorization",
+                    ex.getMessage() != null ? ex.getMessage() : "Zugriff verweigert"))
+            .build();
+  }
 }
 
 

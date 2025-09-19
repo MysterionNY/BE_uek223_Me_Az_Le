@@ -35,7 +35,7 @@ public class UserServiceImpl extends AbstractServiceImpl<User> implements UserSe
   @Override
   public User register(User user) {
     user.setPassword(passwordEncoder.encode(user.getPassword()));
-    Role defaultRole=roleService.findById(UUID.fromString("d29e709c-0ff1-4f4c-a7ef-09f656c390f1"));//Default role
+    Role defaultRole=roleService.findById(UUID.fromString("c6aee32d-8c35-4481-8b3e-a876a39b0c02"));//Default role
     user.setRoles(Set.of(defaultRole));
     return save(user);
   }
